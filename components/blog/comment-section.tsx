@@ -1,9 +1,9 @@
 'use client'
 
-import { memo, useState, useCallback } from 'react'
+import { memo, useState, useCallback, useEffect } from 'react'
 import { formatDate, generateAlias, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { addComment } from '@/app/actions'
+import { addComment, likeComment } from '@/app/actions'
 import { Heart, Reply } from 'lucide-react'
 import type { Comment } from '@/types/blog'
 
@@ -132,6 +132,21 @@ const CommentThread = memo(function CommentThread({
   isSubmitting,
   handleSubmit
 }: CommentThreadProps) {
+  const [isLiking, setIsLiking] = useState(false)
+  const [likes, setLikes] = useState(comment.likes || 0)
+
+  useEffect(() => {
+    setLikes(comment.likes || 0)
+  }, [comment.likes])
+
+  const handleLike = useCallback(async () => {
+    if (isLiking) return
+    setIsLiking(true)
+    setLikes(prev => prev + 1)
+    await likeComment(comment.id)
+    setIsLiking(false)
+  }, [comment.id, isLiking])
+
   const isReplying = replyingTo === comment.id
   const maxDepth = 3
   const hasReplies = comment.replies && comment.replies.length > 0
@@ -205,9 +220,16 @@ const CommentThread = memo(function CommentThread({
 
           {/* Action Bar */}
           <div className="flex items-center gap-5 mt-2 ml-3">
-            <button className="group flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground hover:text-primary transition-all">
-              <Heart className="w-3.5 h-3.5 transition-transform group-active:scale-125" />
-              <span>LIKE</span>
+            <button 
+              onClick={handleLike}
+              disabled={isLiking}
+              className={cn(
+                "group flex items-center gap-1.5 text-[11px] font-bold transition-all",
+                likes > 0 ? "text-primary" : "text-muted-foreground hover:text-primary"
+              )}
+            >
+              <Heart className={cn("w-3.5 h-3.5 transition-transform group-active:scale-125", likes > 0 && "fill-primary")} />
+              <span>{likes > 0 ? likes : 'LIKE'}</span>
             </button>
             {depth < maxDepth && (
               <button
