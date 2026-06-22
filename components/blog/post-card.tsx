@@ -6,7 +6,14 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { CommentSection } from './comment-section'
 import { updateReaction, getComments, deletePost } from '@/app/actions'
 import type { Post, Comment } from '@/types/blog'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Share2, Link as LinkIcon, Twitter, Facebook } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useToast } from '@/components/ui/use-toast'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +33,27 @@ interface PostCardProps {
 
 function PostCardComponent({ post, isAuthenticated = false }: PostCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const { toast } = useToast()
+  
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/#post-${post.id}` : ''
+
+  const handleCopyLink = useCallback(() => {
+    navigator.clipboard.writeText(shareUrl)
+    toast({
+      description: "Link copied to clipboard",
+    })
+  }, [shareUrl, toast])
+
+  const handleShareTwitter = useCallback(() => {
+    const text = encodeURIComponent(`Check out this post: ${post.title}`)
+    const url = encodeURIComponent(shareUrl)
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
+  }, [post.title, shareUrl])
+
+  const handleShareFacebook = useCallback(() => {
+    const url = encodeURIComponent(shareUrl)
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank')
+  }, [shareUrl])
   const [comments, setComments] = useState<Comment[]>([])
   const [isDeleting, setIsDeleting] = useState(false)
   const [reactions, setReactions] = useState({
@@ -69,7 +97,7 @@ function PostCardComponent({ post, isAuthenticated = false }: PostCardProps) {
   const totalComments = countAllComments(comments)
 
   return (
-    <Card className={cn("overflow-hidden border-border bg-card transition-shadow hover:shadow-md", isDeleting && "opacity-50 pointer-events-none")}>
+    <Card id={`post-${post.id}`} className={cn("overflow-hidden border-border bg-card transition-shadow hover:shadow-md", isDeleting && "opacity-50 pointer-events-none")}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
@@ -153,6 +181,32 @@ function PostCardComponent({ post, isAuthenticated = false }: PostCardProps) {
               label="Cap"
               onClick={() => handleReaction('cap')}
             />
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="flex items-center gap-1 rounded-full bg-card px-3 py-1.5 text-sm transition-colors hover:bg-secondary"
+                  aria-label="Share post"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span className="font-medium text-foreground">Share</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleCopyLink}>
+                  <LinkIcon className="mr-2 h-4 w-4" />
+                  <span>Copy Link</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleShareTwitter}>
+                  <Twitter className="mr-2 h-4 w-4" />
+                  <span>Twitter</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleShareFacebook}>
+                  <Facebook className="mr-2 h-4 w-4" />
+                  <span>Facebook</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <span className="text-xs text-muted-foreground">
             {totalComments} {totalComments === 1 ? 'comment' : 'comments'}
