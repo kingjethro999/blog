@@ -64,6 +64,37 @@ export async function addComment(
   return { success: true }
 }
 
+export async function likeComment(commentId: string) {
+  const supabase = await createAdminClient()
+  
+  // First get current value
+  const { data: comment, error: fetchError } = await supabase
+    .from('comments')
+    .select('likes')
+    .eq('id', commentId)
+    .single()
+
+  if (fetchError || !comment) {
+    console.error('Error fetching comment for like:', fetchError)
+    return { error: 'Comment not found' }
+  }
+
+  const currentValue = comment.likes || 0
+
+  const { error: updateError } = await supabase
+    .from('comments')
+    .update({ likes: currentValue + 1 })
+    .eq('id', commentId)
+
+  if (updateError) {
+    console.error('Error updating comment like:', updateError)
+    return { error: updateError.message }
+  }
+
+  revalidatePath('/')
+  return { success: true }
+}
+
 export async function updateReaction(postId: string, reactionType: 'fire' | 'tea' | 'cap') {
   // Use admin client to bypass RLS for anonymous reactions
   const supabase = await createAdminClient()
