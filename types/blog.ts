@@ -6,6 +6,7 @@ export interface Comment {
   alias: string
   parent_id: string | null
   is_admin: boolean
+  likes?: number
   replies?: Comment[]
 }
 
